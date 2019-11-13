@@ -1,0 +1,131 @@
+---
+title: 'Sydney Users of R Forum: High-level Documentation'
+author: "Craig (Doc) Savage"
+output: 
+  html_document: 
+    self_contained: true
+    theme: null
+params:
+  data: !r data( 'Boston', package='MASS' )
+  seed: 100
+  splitPc: 0.75
+  exclCorr: TRUE
+  exclCorrValue: 0.6
+  linModel: NULL
+  numTrees: 200
+  mTry: 5
+  minSize: 10
+  rfModel: NULL
+  trainLinePlot: NULL
+  trainMetric: NULL
+  testLinePlot: NULL
+  testMetric: NULL
+  cvPlot: NULL
+---
+
+```{r loadPackages, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
+library( tidyverse )
+library( tidymodels )
+library( RColorBrewer )
+
+
+# Deal parameters
+myData <- params$data
+initSeed <- params$seed
+splitPc <- params$splitPc
+exclCorr <- params$exclCorr 
+exclCorrValue <- params$exclCorrValue  
+linModel <- params$linModel
+numTrees <- params$numTrees
+mTry <- params$mTry
+minSize <- params$minSize
+rfModel <- params$rfModel
+trainLinePlot <- params$trainLinePlot
+trainMetric <- params$trainMetric
+testLinePlot <- params$testLinePlot
+testMetric <- params$testMetric
+cvPlot <- params$cvPlot
+```
+
+A comparison of linear regression and random forests was performed on house price data. The data set includes `r nrow( myData )` observations across `r ncol( myData )` variables, including both dependent and independent variables.
+
+A number of parameters were defined in support of this problem. A summary of these values is given below.
+
+<div class="centered">
+
+| **Parameter** | **Value** | **Comments** |
+|:--------------|----------:|:-------------|
+Random seed | `r initSeed` | For reproducibility.
+Split percent | `r splitPc` | Fraction of the data to use as training
+Exclude correlations? | `r exclCorr` | For linear model.
+Correlation threshold | `r exclCorrValue` | `NA` if not excluding correlations
+Number of trees | `r numTrees` | For random forest
+Variables at each split | `r mTry` | For random forest
+Minimal split size | `r minSize` | For random forest
+
+</div>
+
+# Training
+
+Based on these parameters, the following results were constructred based on the training data.
+
+## Linear Model
+
+The linear model resulted in the variables and coefficients:
+
+```{r linModel, results='asis'}
+linResults <- as.data.frame( linModel$fit$coefficients )
+names( linResults ) <- 'Coefficients' 
+linResults <- linResults %>%
+  rownames_to_column( var='Variable' ) %>%
+  select( Variable, Coefficients ) %>%
+  mutate( Coefficients = signif( Coefficients, 3 ) )
+knitr::kable( linResults )
+```
+
+## Random Forest
+
+It's unclear how to best document the results of a random forest. Rest assured, the model object from `R` has been preserved.
+
+```{r rfModel}
+print( rfModel$fit )
+```
+
+## Results
+
+A summary of training results is presented below. 
+
+```{r trainResults, results='asis'}
+trainLinePlot
+knitr::kable( trainMetric
+              , format='html'
+              , caption='Metrics from training data.'
+              , digits=2 ) %>%
+  kableExtra::column_spec( 1:4, width='20em' )
+```
+
+
+# Testing
+
+Following training, the models were tested on the `r scales::percent(1-splitPc)` of the data reserved for testing.
+
+A plot of the expected versus actual and a summary of the metrics is presented below.
+
+```{r testResults, results='asis'}
+testLinePlot
+knitr::kable( testMetric
+              , format='html'
+              , caption='Metrics from test data.'
+              , digits=2 ) %>%
+  kableExtra::column_spec( 1:4, width='20em' )
+```
+
+
+# Cross-Validation
+
+Cross-validation was done to assess the variability of model performance. The results are presented graphically below.
+
+```{r cvPlot, results='asis'}
+cvPlot
+````
